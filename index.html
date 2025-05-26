@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Portfolio</title>
+    <title>Vite App</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
@@ -30,14 +30,17 @@
   </head>
   <body>
     <div id="app">
-      <div class = "absolute text-white text-center"
+      <div class = "absolute text-white text-center w-full px-4 md:px-0"
         style = "top: 50%;
         transform: translate(-50%, -50%); left: 50%;">
-        <h1 class = "font-space-mono-bold-italic text-sm uppercase tracking-wide"> LAKSHADITYA SINGH</h1>
-        <p class = "font-exo text-4xl"> ONE WITH AN EVERLASTING DESIRE FOR THE UNKNOWN & UNTOLD</p>
-        <a 
+        <div class="text-container">
+          <h1 class = "font-space-mono-bold-italic text-xs sm:text-sm uppercase tracking-wide animate-text"> LAKSHADITYA SINGH</h1>
+          <p class = "font-exo text-2xl sm:text-3xl md:text-4xl animate-text"> ONE WITH AN EVERLASTING DESIRE FOR THE UNKNOWN & UNTOLD</p>
+        </div>
+        <a
+        id="viewWorkBtn" 
         href="https://thunder25beast.github.io/portfolio.github.io/"
-        class="border px-4 py-2 rounded-lg text-sm font-space-mono uppercase mt-8 hover:bg-white hover:text-gray-800 inline-block">View Work</a>
+        class="border px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-space-mono uppercase mt-6 sm:mt-8 hover:bg-white hover:text-gray-800 inline-block">View Work</a>
       </div>
     </div>
    
