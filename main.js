@@ -6,6 +6,11 @@ gsap.registerPlugin(TextPlugin);
 import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js'
 import {OrbitControls} from 'https://unpkg.com/three@0.126.1/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
+
+const initialCameraPosition = new THREE.Vector3(0, 0, 50);
+const initialCameraRotation = new THREE.Euler(0, 0, 0);
+let controls; // Declare controls here to be accessible
+
 console.log(OrbitControls)
 const gui= new dat.GUI()
 const world = {
@@ -69,8 +74,12 @@ renderer.setPixelRatio(devicePixelRatio)
 document.body.appendChild(renderer.domElement)
 
 
-new OrbitControls(camera, renderer.domElement)
-camera.position.z = 50
+controls = new OrbitControls(camera, renderer.domElement); // Assign to the higher-scoped variable
+camera.position.copy(initialCameraPosition);
+camera.rotation.copy(initialCameraRotation);
+controls.target.set(0, 0, 0);
+controls.update(); // Important after setting position/target
+
 
 const planeGeometry = new THREE.PlaneGeometry(world.plane.width, world.plane.height, world.plane.widthSegments, world.plane.heightSegments)
 const planeMaterial = new THREE.MeshPhongMaterial({
@@ -117,10 +126,11 @@ const mouse = {
 }
 
 // GSAP Animations
-const tl = gsap.timeline();
+// const tl = gsap.timeline(); // Old intro timeline, replaced for clarity
+const introTextAnimation = gsap.timeline({ paused: true }); // Initialize paused
 
 // Text Animation (runs first)
-tl.from(".animate-text", {
+introTextAnimation.from(".animate-text", {
   duration: 1,
   opacity: 0,
   y: 50,
@@ -129,7 +139,7 @@ tl.from(".animate-text", {
 });
 
 // REMOVE initial camera animation or comment it out
-// tl.to(camera.position, {
+// introTextAnimation.to(camera.position, { // If you had camera animations here, ensure they are on introTextAnimation
 //   z: 15, 
 //   duration: 2,
 //   ease: "power3.inOut"
@@ -148,6 +158,63 @@ tl.from(".animate-text", {
 //   duration: 2,
 //   ease: "power2.inOut"
 // }, "<"); 
+
+
+if (sessionStorage.getItem('isReturningFromPortfolio') === 'true') {
+    sessionStorage.removeItem('isReturningFromPortfolio');
+    if (controls) controls.enabled = false; // Disable controls
+
+    // Set camera to the state it was in *just before* navigating away
+    camera.position.set(initialCameraPosition.x, 1000, 300);
+    camera.rotation.set(Math.PI / 2, initialCameraRotation.y, initialCameraRotation.z);
+    if (controls) {
+        controls.target.set(initialCameraPosition.x, 0, 0); 
+        // controls.update(); // Update after re-enabling later
+    }
+
+    const returnTl = gsap.timeline();
+
+    // Reverse step 3 of clickTl: y from 1000 to -100
+    returnTl.to(camera.position, {
+        y: -100,
+        duration: 1.5,
+        ease: "power2.out" 
+    });
+
+    // Reverse step 2 & 1 of clickTl (simultaneously)
+    // y from -100 to initialCameraPosition.y
+    // z from 300 to initialCameraPosition.z
+    // rotation.x from Math.PI / 2 to initialCameraRotation.x
+    returnTl.to(camera.position, {
+        y: initialCameraPosition.y,
+        z: initialCameraPosition.z,
+        duration: 2,
+        ease: "power2.inOut" 
+    }, "<"); 
+
+    returnTl.to(camera.rotation, {
+        x: initialCameraRotation.x,
+        duration: 2,
+        ease: "power3.inOut" 
+    }, "<"); 
+
+    returnTl.call(() => {
+        // Ensure camera is exactly at initial state and controls are reset
+        camera.position.copy(initialCameraPosition);
+        camera.rotation.copy(initialCameraRotation);
+        if (controls) {
+            controls.target.set(0, 0, 0);
+            controls.enabled = true; // Re-enable controls
+            controls.update();       // Update controls
+        }
+        introTextAnimation.play(0); // Play intro text animation from the beginning
+    });
+
+} else {
+    // Normal load, play intro text animation
+    if (controls) controls.enabled = true; // Ensure controls are enabled
+    introTextAnimation.play();
+}
 
 
 let frame  = 0
@@ -233,10 +300,18 @@ animate()
 const viewWorkBtn = document.getElementById('viewWorkBtn');
 viewWorkBtn.addEventListener('click', (event) => {
   event.preventDefault(); // Prevent default link behavior
+  sessionStorage.setItem('isReturningFromPortfolio', 'true'); // Set flag before animation
+  if (controls) controls.enabled = false; // Disable controls before animation starts
 
-  const clickTl = gsap.timeline();
+  const clickTl = gsap.timeline({
+    onComplete: () => {
+      // Controls remain disabled as we navigate away.
+      // On return, they'll be re-initialized or handled by the return logic.
+      window.location.href = "https://thunder25beast.github.io/portfolio.github.io/";
+    }
+  });
 
-  // 1. Initial Zoom
+  // 1. Initial Zoom (Commented out in original, kept for reference)
   // clickTl.to(camera.position, {
   //   z: 50, 
   //   duration: 1.5,
@@ -244,30 +319,27 @@ viewWorkBtn.addEventListener('click', (event) => {
   // });
 
   // 2. Rotate and Travel Upwards (Simultaneously)
-  // This block starts after the initial zoom.
   clickTl.to(camera.rotation, { // Rotation part
     x: Math.PI / 2, // Rotate upwards
     duration: 2,    // Duration for rotation
     ease: "power3.inOut"
   }, ">"); 
 
-  clickTl.to(camera.position, { // Upward travel part (y-axis)
+  clickTl.to(camera.position, { // Upward travel part (y-axis and z-axis)
     y: -100, 
-    Z: 300,
+    z: 10, // Corrected from Z to z
     duration: 2,    // Match rotation duration
     ease: "power2.inOut"
   }, "<"); 
 
-  // 3. Final Zoom Towards Sky (z-axis)
-  // This starts after the rotation and upward travel block completes.
+  // 3. Final Zoom Towards Sky (y-axis)
   clickTl.to(camera.position, {
-    y: 1000, // Final zoom
-    duration: 1.5, // Duration for this final zoom
+    y: 1000, // Final upward movement
+    duration: 1.5, // Duration for this final movement
     ease: "power2.in",
-    onComplete: () => {
-      window.location.href = "https://thunder25beast.github.io/portfolio.github.io/";
-    }
+    // onComplete is now part of the timeline definition
   }, ">"); 
+  // clickTl.play(); // Not strictly necessary if timeline is not paused by default
 });
 
 addEventListener('mousemove', (event) => {
