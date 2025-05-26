@@ -1,5 +1,7 @@
-
 import gsap from 'gsap'
+import { TextPlugin } from 'gsap/TextPlugin';
+
+gsap.registerPlugin(TextPlugin);
 
 import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js'
 import {OrbitControls} from 'https://unpkg.com/three@0.126.1/examples/jsm/controls/OrbitControls.js'
@@ -82,6 +84,25 @@ scene.add(planeMesh)
 
 generatePlane()
 
+// Create starfield
+const starGeometry = new THREE.BufferGeometry()
+const starMaterial = new THREE.PointsMaterial({
+  color: 0xffffff
+})
+
+const starVertices = []
+for (let i = 0; i < 10000; i++) {
+  const x = (Math.random() - 0.5) * 2000
+  const y = (Math.random() - 0.5) * 2000
+  const z = (Math.random() - 0.5) * 2000
+  starVertices.push(x, y, z)
+}
+
+starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3))
+
+const stars = new THREE.Points(starGeometry, starMaterial)
+scene.add(stars)
+
 const light = new THREE.DirectionalLight(0xffffff, 1)
 light.position.set(0, 1, 1)
 scene.add(light)
@@ -95,11 +116,49 @@ const mouse = {
   y: undefined
 }
 
+// GSAP Animations
+const tl = gsap.timeline();
+
+// Text Animation (runs first)
+tl.from(".animate-text", {
+  duration: 1,
+  opacity: 0,
+  y: 50,
+  stagger: 0.3,
+  ease: "power3.out"
+});
+
+// REMOVE initial camera animation or comment it out
+// tl.to(camera.position, {
+//   z: 15, 
+//   duration: 2,
+//   ease: "power3.inOut"
+// }, ">"); 
+
+// tl.to(camera.position, {
+//   x: -20, 
+//   y: 10, 
+//   duration: 2,
+//   ease: "power2.inOut"
+// }, ">-0.5"); 
+
+// tl.to(camera.rotation, {
+//   y: Math.PI / 8, 
+//   x: -Math.PI / 16, 
+//   duration: 2,
+//   ease: "power2.inOut"
+// }, "<"); 
+
+
 let frame  = 0
 function animate(){
   requestAnimationFrame(animate)
   frame+= 0.01
   renderer.render(scene, camera)
+
+  // Rotate starfield
+  stars.rotation.x += 0.0005
+  stars.rotation.y += 0.0005
 
   raycaster.setFromCamera(mouse, camera)
 
@@ -171,9 +230,59 @@ function animate(){
 
 animate()
 
+const viewWorkBtn = document.getElementById('viewWorkBtn');
+viewWorkBtn.addEventListener('click', (event) => {
+  event.preventDefault(); // Prevent default link behavior
+
+  const clickTl = gsap.timeline();
+
+  // 1. Initial Zoom
+  // clickTl.to(camera.position, {
+  //   z: 50, 
+  //   duration: 1.5,
+  //   ease: "power2.inOut"
+  // });
+
+  // 2. Rotate and Travel Upwards (Simultaneously)
+  // This block starts after the initial zoom.
+  clickTl.to(camera.rotation, { // Rotation part
+    x: Math.PI / 2, // Rotate upwards
+    duration: 2,    // Duration for rotation
+    ease: "power3.inOut"
+  }, ">"); 
+
+  clickTl.to(camera.position, { // Upward travel part (y-axis)
+    y: -100, 
+    Z: 300,
+    duration: 2,    // Match rotation duration
+    ease: "power2.inOut"
+  }, "<"); 
+
+  // 3. Final Zoom Towards Sky (z-axis)
+  // This starts after the rotation and upward travel block completes.
+  clickTl.to(camera.position, {
+    y: 1000, // Final zoom
+    duration: 1.5, // Duration for this final zoom
+    ease: "power2.in",
+    onComplete: () => {
+      window.location.href = "https://thunder25beast.github.io/portfolio.github.io/";
+    }
+  }, ">"); 
+});
 
 addEventListener('mousemove', (event) => {
-  mouse.x = (event.clientX / innerWidth) *2 -1
-  mouse.y = -(event.clientY / innerHeight) *2 + 1
-  console.log(mouse)
-})
+  mouse.x = (event.clientX / innerWidth) *2 -1;
+  mouse.y = -(event.clientY / innerHeight) *2 + 1;
+  // console.log(mouse) // It's good practice to remove or comment out console.logs when not actively debugging
+});
+
+// Handle browser resize
+window.addEventListener('resize', () => {
+  // Update camera
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+
+  // Update renderer
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Consider device pixel ratio for sharpness
+});
