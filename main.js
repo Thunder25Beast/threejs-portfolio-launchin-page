@@ -160,34 +160,36 @@ introTextAnimation.from(".animate-text", {
 // }, "<"); 
 
 
-if (sessionStorage.getItem('isReturningFromPortfolio') === 'true') {
-    sessionStorage.removeItem('isReturningFromPortfolio');
-    if (controls) controls.enabled = false; // Disable controls
+// Function to setup and play the return animation
+function setupReturnAnimation() {
+    if (controls) controls.enabled = false;
 
     // Set camera to the state it was in *just before* navigating away
-    camera.position.set(initialCameraPosition.x, 1000, 300);
+    // Based on clickTl: y=1000, z=10, rotation.x = Math.PI / 2
+    camera.position.set(initialCameraPosition.x, 1000, 10);
     camera.rotation.set(Math.PI / 2, initialCameraRotation.y, initialCameraRotation.z);
+    
     if (controls) {
-        controls.target.set(initialCameraPosition.x, 0, 0); 
-        // controls.update(); // Update after re-enabling later
+        controls.target.set(initialCameraPosition.x, 0, 0); // Adjust target based on where camera looks from far state
+        // controls.update(); // Will be updated after animation when controls are re-enabled
     }
 
     const returnTl = gsap.timeline();
 
-    // Reverse step 3 of clickTl: y from 1000 to -100
+    // Reverse step 3 of clickTl: y from 1000 to -100 (z remains 10)
     returnTl.to(camera.position, {
         y: -100,
         duration: 1.5,
         ease: "power2.out" 
     });
 
-    // Reverse step 2 & 1 of clickTl (simultaneously)
+    // Reverse step 2 of clickTl (simultaneously)
     // y from -100 to initialCameraPosition.y
-    // z from 300 to initialCameraPosition.z
+    // z from 10 to initialCameraPosition.z
     // rotation.x from Math.PI / 2 to initialCameraRotation.x
     returnTl.to(camera.position, {
         y: initialCameraPosition.y,
-        z: initialCameraPosition.z,
+        z: initialCameraPosition.z, // Animate z back to initial (e.g., 50)
         duration: 2,
         ease: "power2.inOut" 
     }, "<"); 
@@ -207,14 +209,33 @@ if (sessionStorage.getItem('isReturningFromPortfolio') === 'true') {
             controls.enabled = true; // Re-enable controls
             controls.update();       // Update controls
         }
-        introTextAnimation.play(0); // Play intro text animation from the beginning
+        introTextAnimation.restart(); // Play intro text animation from the beginning
+        sessionStorage.removeItem('isReturningFromPortfolio'); // Clear flag after animation
+        console.log("Return animation finished, flag cleared.");
     });
-
-} else {
-    // Normal load, play intro text animation
-    if (controls) controls.enabled = true; // Ensure controls are enabled
-    introTextAnimation.play();
+    
+    return returnTl; // Return the timeline so it can be played
 }
+
+// Function to play the normal intro animation
+function playNormalIntro() {
+    if (controls) controls.enabled = true; // Ensure controls are enabled
+    introTextAnimation.restart();
+    console.log("Normal intro animation played.");
+}
+
+// Use pageshow to handle initial load and back/forward navigation
+window.addEventListener('pageshow', function(event) {
+    console.log("pageshow event fired. event.persisted:", event.persisted);
+    if (sessionStorage.getItem('isReturningFromPortfolio') === 'true') {
+        console.log("Returning from portfolio flag is set.");
+        const returnAnimationTimeline = setupReturnAnimation();
+        returnAnimationTimeline.play();
+    } else {
+        console.log("Not returning from portfolio OR flag not set.");
+        playNormalIntro();
+    }
+});
 
 
 let frame  = 0
