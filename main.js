@@ -328,7 +328,7 @@ viewWorkBtn.addEventListener('click', (event) => {
     onComplete: () => {
       // Controls remain disabled as we navigate away.
       // On return, they'll be re-initialized or handled by the return logic.
-      window.location.href = "https://thunder25beast.github.io/portfolio.github.io/";
+      window.location.href = "https://lakshaditya.netlify.app/";
     }
   });
 
